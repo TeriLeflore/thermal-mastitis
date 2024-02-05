@@ -36,7 +36,7 @@ while True:
         cv2.imshow('Cam 4', frame4)    
     
     
-    if cv2.waitKey(1) & 0xFF == ord('q'):
+    if cv2.waitKey(1) & 0xFF == ord('z'):
         break
 
 # When everything is done, release the capture
