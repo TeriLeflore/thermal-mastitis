@@ -12,6 +12,9 @@ def main():
             [sg.Image(filename="", key="-IMAGE-")],
             [sg.Button("Cam 0", size=(10, 1), font='Helvetic 14')],
             [sg.Button("Cam 1", size=(10, 1), font='Helvetic 14')],
+            [sg.Button("Cam 2", size=(10, 1), font='Helvetic 14')],
+            [sg.Button("Cam 3", size=(10, 1), font='Helvetic 14')],
+            [sg.Button("Cam 4", size=(10, 1), font='Helvetic 14')],
             [sg.Button("Stop", size=(10, 1), font='Helvetic 14')],
             [sg.Button("Exit", size=(10, 1), font='Helvetic 14')],
     ]
