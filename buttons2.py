@@ -39,7 +39,8 @@ def main():
     
 	while True:
     	# Capture frame-by-frame
-    		ret0, frame0 = window.read(timeout=20)
+		ret, frame = window.read(timeout=20)
+    		ret0, frame0 = window0.read(timeout=20)
     		ret1, frame1 = window1.read(timeout=20)
     		ret2, frame2 = window2.read(timeout=20)
     		ret3, frame3 = window3.read(timeout=20)
