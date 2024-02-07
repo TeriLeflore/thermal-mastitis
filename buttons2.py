@@ -45,17 +45,23 @@ def main():
     		ret2, frame2 = window2.read(timeout=20)
     		ret3, frame3 = window3.read(timeout=20)
     		ret4, frame4 = window4.read(timeout=20)
+		
     		if event == 'Exit' or event == sg.WIN_CLOSED:
     			return
+			
     	#Display the resulting frame
 		elif ret0 == 'Cam 0':
     			cv2.imshow('Cam 0', frame0)
+			
 		elif ret1 == 'Cam 1':
         		cv2.imshow('Cam 1', frame1)
+			
 		elif ret2 == 'Cam 2':
 			cv2.imshow('Cam 2', frame2)
+			
 		elif ret3 == 'Cam 3':
 			cv2.imshow('Cam 3', frame3)
+			
 		elif ret4 == 'Cam 4':
 			cv2.imshow('Cam 4', frame4)    
             
