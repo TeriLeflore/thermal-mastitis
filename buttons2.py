@@ -45,8 +45,7 @@ def main():
     		ret2, frame2 = window2.read(timeout=20)
     		ret3, frame3 = window3.read(timeout=20)
     		ret4, frame4 = window4.read(timeout=20)
-		
-    		if event == 'Exit' or event == sg.WIN_CLOSED:
+		if event == 'Exit' or event == sg.WIN_CLOSED:
     			return
 			
     	#Display the resulting frame
