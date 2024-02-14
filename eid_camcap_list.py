@@ -35,8 +35,10 @@ vid_capdevices = [
       cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_97206-video-index0"),
       cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196764-video-index0"),
       ]
-def sixteenbit_cap():
-    cam = vid_capdevices
+
+source = vid_capdevices
+def sixteenbit_cap(source):
+    cam = cv2.Videocapture(source)
     cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 512)
     cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
     cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('Y','1','6',' '))
@@ -44,12 +46,12 @@ def sixteenbit_cap():
 
 async def run():
     reader, writer = await open_serial_connection(url=portname, baudrate=baudrate)
-    vid_capdevices = [
+    #vid_capdevices = [
       #cv2.VideoCapture(0),
-      cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196769-video-index0"),
-      cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_97206-video-index0"),
-      cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196764-video-index0"),
-      ]
+      #cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196769-video-index0"),
+      #cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_97206-video-index0"),
+      #cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196764-video-index0"),
+      #]
     while True:
         
         eid = await reader.readline()
@@ -58,22 +60,49 @@ async def run():
         eid_list.extend(datetime_list)
         img_name = "_".join(eid_list) + ".tiff"
         print(img_name)
-        results = []
-        for vidcap in vid_capdevices:
-           ret, frame = vidcap.read()
-           results.append( [ret,frame] )
-        for number, (ret, frame) in enumerate(results):
-           if ret:
-              cv2.imwrite(img_name, frame)
-              #cv2.imshow(f'Cam {number}', frame)
+
+        cap0 = cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196769-video-index0")
+        ret0, frame0 = cap0.read()
+        if ret0: 
+              cv2.imwrite(img_name + "B769", frame0)
+        cap0.release()
+
+        cap1 = cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_97206-video-index0")
+        ret1, frame1 = cap1.read()
+        if ret1:
+              cv2.imwrite(img_name + "B206", frame1)
+              
+        cap1.release()
+
+        cap2 = cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196764-video-index0")
+        ret2, frame2 = cap2.read()
+        if ret2:
+              cv2.imwrite(img_name + "B764", frame2)
+              
+        cap2.release()
+
+        k = cv2.waitKey(30) & 0xff
+        if k == 27:
+            break
+
+        cv2.destroyAllWindows()
+          
+       # results = []
+        #for vidcap in vid_capdevices:
+          # ret, frame = vidcap.read()
+          # results.append( [ret,frame] )
+       # for number, (ret, frame) in enumerate(results):
+       #    if ret:
+        #      cv2.imwrite(img_name, frame)
+        #      #cv2.imshow(f'Cam {number}', frame)
         #vid_capdevices.release()
 
         inRgb = qRGB.get()
         frame = inRgb.getCvFrame()
         cv2.imwrite(f"{img_name}_Rgb.png", frame)
 
-    for vidcap in vid_capdevices:
-        vid_capdevices.release()
+    #for vidcap in vid_capdevices:
+        #vid_capdevices.release()
 
 loop = get_event_loop()
 loop.run_until_complete(run())
