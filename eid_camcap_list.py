@@ -36,13 +36,13 @@ vid_capdevices = [
       cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196764-video-index0"),
       ]
 
-source = vid_capdevices
-def sixteenbit_cap(source):
-    cam = cv2.Videocapture(source)
-    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 512)
-    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-    cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('Y','1','6',' '))
-    cam.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+#source = vid_capdevices
+#def sixteenbit_cap(source):
+    #cam = cv2.Videocapture(source)
+    #cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 512)
+    #cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    #cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('Y','1','6',' '))
+    #cam.set(cv2.CAP_PROP_CONVERT_RGB, 0)
 
 async def run():
     reader, writer = await open_serial_connection(url=portname, baudrate=baudrate)
@@ -81,11 +81,10 @@ async def run():
               
         cap2.release()
 
-        k = cv2.waitKey(30) & 0xff
-        if k == 27:
+        if cv2.waitKey(1) & 0xff == ord('q')
             break
 
-        cv2.destroyAllWindows()
+    cv2.destroyAllWindows()
           
        # results = []
         #for vidcap in vid_capdevices:
