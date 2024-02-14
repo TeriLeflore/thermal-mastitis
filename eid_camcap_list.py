@@ -29,9 +29,22 @@ camRgb.video.link(xoutRgb.input)
 oak_camera = dai.Device(pipeline)
 qRGB = oak_camera.getOutputQueue(name="rgb", maxSize=10, blocking=False)
 
+vid_capdevices = [
+      #cv2.VideoCapture(0),
+      cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196769-video-index0"),
+      cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_97206-video-index0"),
+      cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196764-video-index0"),
+      ]
+def sixteenbit_cap():
+    cam = vid_capdevices
+    cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 512)
+    cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+    cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('Y','1','6',' '))
+    cam.set(cv2.CAP_PROP_CONVERT_RGB, 0)
+
 async def run():
     reader, writer = await open_serial_connection(url=portname, baudrate=baudrate)
-    cam = [
+    vid_capdevices = [
       #cv2.VideoCapture(0),
       cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_196769-video-index0"),
       cv2.VideoCapture("/dev/v4l/by-id/usb-FLIR_Boson_97206-video-index0"),
@@ -39,10 +52,6 @@ async def run():
       ]
     while True:
         
-        #cam.set(cv2.CAP_PROP_FRAME_HEIGHT, 512)
-        #cam.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
-        #cam.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter.fourcc('Y','1','6',' '))
-        #cam.set(cv2.CAP_PROP_CONVERT_RGB, 0)
         eid = await reader.readline()
         eid_list = [eid.decode().strip()]
         datetime_list = str(datetime.datetime.now()).split(" ")
@@ -50,21 +59,21 @@ async def run():
         img_name = "_".join(eid_list) + ".tiff"
         print(img_name)
         results = []
-        for vidcapture in cam:
-           ret, frame = vidcapture.read()
+        for vidcap in vid_capdevices:
+           ret, frame = vidcap.read()
            results.append( [ret,frame] )
         for number, (ret, frame) in enumerate(results):
            if ret:
               cv2.imwrite(img_name, frame)
               #cv2.imshow(f'Cam {number}', frame)
-        #cam.release()
+        #vid_capdevices.release()
 
         inRgb = qRGB.get()
         frame = inRgb.getCvFrame()
         cv2.imwrite(f"{img_name}_Rgb.png", frame)
 
-    for vidcapture in cam:
-        cam.release()
+    for vidcap in vid_capdevices:
+        vid_capdevices.release()
 
 loop = get_event_loop()
 loop.run_until_complete(run())
