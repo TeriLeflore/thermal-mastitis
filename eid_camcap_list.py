@@ -54,19 +54,19 @@ async def run():
         ret0, frame0 = cap0.read()
         if ret0: 
               cv2.imshow('Cam 0',frame0)
-              cv2.imwrite(img_name + "B769", frame0)
+              cv2.imwrite("B769"+ img_name, frame0)
         cap0.release()
 
         ret1, frame1 = cap1.read()
         if ret1:
               cv2.imshow('Cam 1',frame1)
-              cv2.imwrite(img_name + "B206", frame1)     
+              cv2.imwrite("B206" + img_name, frame1)     
         cap1.release()
 
         ret2, frame2 = cap2.read()
         if ret2:
               cv2.imshow('Cam 2',frame2)
-              cv2.imwrite(img_name + "B764", frame2)
+              cv2.imwrite("B764" + img_name, frame2)
               
         cap2.release()
 
