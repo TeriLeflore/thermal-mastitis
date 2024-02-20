@@ -6,6 +6,7 @@ from asyncio import get_event_loop
 
 import cv2
 import depthai as dai
+import numpy as np
 from serial_asyncio import open_serial_connection
 
 
