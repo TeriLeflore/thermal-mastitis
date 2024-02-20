@@ -30,11 +30,11 @@ def create_oak_pipe() -> dai.Pipeline:
     
     """
     pipeline = dai.Pipeline()
-    camRgb = pipeline.createColorCamera()
-    camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_12_MP)
-    camRgb.setBoardSocket(dai.CameraBoardSocket.CAM_A)
+    camRgb = pipeline.createColorCamera()  #configures rgb camera
+    camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_12_MP) #set camera resolution
+    camRgb.setBoardSocket(dai.CameraBoardSocket.CAM_A) #selects the camera and creates an XLINK in. X Link is how camera communicates with computer
     camRgb.setVideoSize(3840, 2160)
-    xoutRgb = pipeline.create(dai.node.XLinkOut)
+    xoutRgb = pipeline.create(dai.node.XLinkOut) #creates xlinkout and aquire frames
     xoutRgb.setStreamName("rgb")
     camRgb.video.link(xoutRgb.input)
     return pipeline
@@ -88,7 +88,7 @@ async def run():
             oak_camera = dai.Device(pipeline, device_info)
             qRGB = oak_camera.getOutputQueue(name="rgb", maxSize=10, blocking=False)
             inRgb = qRGB.get()
-            frame = inRgb.getCvFrame()
+            frame = inRgb.getCvFrame()   #converts rgb frame to an opencv format
             cv2.imwrite(oakcam.mxid + "_rgb_" + img_name + ".png", frame)
        
         
