@@ -21,7 +21,7 @@ ir_camera_list = [("B769","/dev/v4l/by-id/usb-FLIR_Boson_196769-video-index0"),
 
 
 def create_oak_pipe() -> dai.Pipeline:
-    """creates an Oak Cmere pipeline instance
+    """creates an Oak Camera pipeline instance
     
     Args: None
     
@@ -56,12 +56,12 @@ def set_mode(cam, mode):
 # set up oak-D pipeline
 pipeline = create_oak_pipe()
 
-# defien event loop
+# define event loop
 async def run():
     reader, writer = await open_serial_connection(url=portname, baudrate=baudrate)
    
     while True:
-        # when Cattle tage is read create a tag and timestamp string
+        # when Cattle tag is read create a tag and timestamp string
         eid = await reader.readline()
         eid_list = [eid.decode().strip()]
         datetime_list = str(datetime.datetime.now()).split(" ")
@@ -80,7 +80,7 @@ async def run():
                     cv2.imwrite(camera[0] + "_" + mode + "_" + img_name + ".tiff", frame0)
             camobj.release()
  
-	#Aprire Color images from OAK-D cameras
+	#Aquire Color images from OAK-D cameras
         oak_cam_list = dai.Device.getAllAvailableDevices()
         for oakcam in oak_cam_list:
             device_info = dai.DeviceInfo(oakcam.mxid)
