@@ -1,4 +1,4 @@
-#Adams corrected eid_camcap_list.py
+###Adams corrected eid_camcap_list.py
 
 
 import datetime
@@ -6,9 +6,8 @@ from asyncio import get_event_loop
 
 import cv2
 import depthai as dai
-import numpy as np
 from serial_asyncio import open_serial_connection
-
+#import hashlib
 
 # Tag reader variables
 portname = '/dev/ttyUSB0'
@@ -30,13 +29,15 @@ def create_oak_pipe() -> dai.Pipeline:
     
     """
     pipeline = dai.Pipeline()
-    camRgb = pipeline.createColorCamera()  #configures rgb camera
-    camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_12_MP) #set camera resolution
-    camRgb.setBoardSocket(dai.CameraBoardSocket.CAM_A) #selects the camera and creates an XLINK in. X Link is how camera communicates with computer
+    #Define sources and outputs
+    camRgb = pipeline.createColorCamera()
+    
+    camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_12_MP) #properties
+    camRgb.setBoardSocket(dai.CameraBoardSocket.CAM_A)
     camRgb.setVideoSize(3840, 2160)
-    xoutRgb = pipeline.create(dai.node.XLinkOut) #creates xlinkout and aquire frames
+    xoutRgb = pipeline.create(dai.node.XLinkOut)
     xoutRgb.setStreamName("rgb")
-    camRgb.video.link(xoutRgb.input)
+    camRgb.video.link(xoutRgb.input) #linking
     return pipeline
 
 
@@ -70,7 +71,7 @@ async def run():
         img_name = "_".join(eid_list)
         print(img_name)
 	
-	# Loop through the IR cameras collecting 1unscaled 16-bit and scaled 8-bit images
+	# Loop through the IR cameras collecting 1 unscaled 16-bit and scaled 8-bit images
         for camera in ir_camera_list:
             camobj = cv2.VideoCapture(camera[1])
             for mode in ["16bit", "8bit"]:
@@ -88,7 +89,8 @@ async def run():
             oak_camera = dai.Device(pipeline, device_info)
             qRGB = oak_camera.getOutputQueue(name="rgb", maxSize=10, blocking=False)
             inRgb = qRGB.get()
-            frame = inRgb.getCvFrame()   #converts rgb frame to an opencv format
+            frame = inRgb.getCvFrame()
+            # print(hashlib.sha256(frame).hexdigest())
             cv2.imwrite(oakcam.mxid + "_rgb_" + img_name + ".png", frame)
        
         
