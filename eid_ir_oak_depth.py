@@ -27,6 +27,7 @@ def create_oak_pipe() -> dai.Pipeline:
     Returns: depthai.Pipeline
     
     """
+    pipeline = dai.Pipeline()
     # Define sources and outputs
     camRgb = pipeline.createColorCamera()
     camRgb.setBoardSocket(dai.CameraBoardSocket.CAM_A)
