@@ -1,4 +1,4 @@
-# This is to test adding oak depth/disparity photos to code. It has not been tested to see if it works
+## This only takes a photo if you press the q buttion, not when the tag is read
 
 import datetime
 from asyncio import get_event_loop
@@ -149,66 +149,66 @@ async def run():
             camobj.release()
  
 	#Aquire Color images from OAK-D cameras
+
         oak_cam_list = dai.Device.getAllAvailableDevices()
         for oakcam in oak_cam_list:
             device_info = dai.DeviceInfo(oakcam.mxid)
             oak_camera = dai.Device(pipeline, device_info)
-            disparityQueue = oak_camera.getOutputQueue(name="disparity", maxSize=1, blocking=False)
-            rectifiedLeftQueue = oak_camera.getOutputQueue(name="rectifiedLeft", maxSize=1, blocking=False)
-            rectifiedRightQueue = oak_camera.getOutputQueue(name="rectifiedRight", maxSize=1, blocking=False)
-            rgbQueue = oak_camera.getOutputQueue(name="rgb", maxSize=1, blocking=False)
+            
+        disparityQueue = oak_camera.getOutputQueue(name="disparity", maxSize=1, blocking=False)
+        rectifiedLeftQueue = oak_camera.getOutputQueue(name="rectifiedLeft", maxSize=1, blocking=False)
+        rectifiedRightQueue = oak_camera.getOutputQueue(name="rectifiedRight", maxSize=1, blocking=False)
+        rgbQueue = oak_camera.getOutputQueue(name="rgb", maxSize=10, blocking=False)
         
-            # Calculate a multiplier for colormapping disparity map
-            disparityMultiplier = 255 / stereo.initialConfig.getMaxDisparity()
+        # Calculate a multiplier for colormapping disparity map
+        disparityMultiplier = 255 / stereo.initialConfig.getMaxDisparity()
 
-            cv2.namedWindow("Stereo Pair")
+        #cv2.namedWindow("Stereo Pair")
         
-            # Variable use to toggle between side by side view and one frame view.
-            sideBySide = False
+        # Variable use to toggle between side by side view and one frame view.
+        sideBySide = False
         
-                # Get disparity map
+        while True:
+            # Get disparity map
             disparity = getFrame(disparityQueue)
             
             # Colormap disparity for display
             disparity = (disparity * disparityMultiplier).astype(np.uint8)
             disparity = cv2.applyColorMap(disparity, cv2.COLORMAP_JET)
             
-                # Get left and right rectified frame
+            # Get left and right rectified frame
             leftFrame = getFrame(rectifiedLeftQueue);
             rightFrame = getFrame(rectifiedRightQueue)
             
             if sideBySide:
-                # Show side by side view
+            # Show side by side view
                 imOut = np.hstack((leftFrame, rightFrame))
             else :
-                # Show overlapping frames
+            # Show overlapping frames
                 imOut = np.uint8(leftFrame/2 + rightFrame/2)
             
             
             imOut = cv2.cvtColor(imOut,cv2.COLOR_GRAY2RGB) 
             
-            cv2.imshow("Stereo Pair", imOut)
-            cv2.imshow("Disparity", disparity)
-            #cv2.imwrite("stereo_pair" + ".png", imOut)
-            #cv2.imwrite("disparity" + ".png", disparity) 
+            #cv2.imshow("Stereo Pair", imOut)
+            #cv2.imshow("Disparity", disparity) 
             cv2.imwrite(oakcam.mxid + "_stereo_pair_" + img_name + ".png", imOut) 
             cv2.imwrite(oakcam.mxid + "_disparity_" + img_name + ".png", disparity)
             
                       
-            #Aquire Color images from OAK-D cameras
+        #Aquire Color images from OAK-D cameras
             qRGB = getFrame(rgbQueue)
             
-            #cv2.imshow("RGB", qRGB)
+            cv2.imshow("RGB", qRGB)
             cv2.imwrite(oakcam.mxid + "_rgb_" + img_name + ".png", qRGB)
-                #cv2.imwrite("color_image" + ".png", qRGB)
 
-                # Check for keyboard input
+        # Check for keyboard input
             key = cv2.waitKey(1)
             if key == ord('q'):
             # Quit when q is pressed
                 break
             elif key == ord('t'):
-                # Toggle display when t is pressed
+            # Toggle display when t is pressed
                 sideBySide = not sideBySide
 
 
@@ -223,3 +223,4 @@ async def run():
 
 loop = get_event_loop()
 loop.run_until_complete(run())
+
