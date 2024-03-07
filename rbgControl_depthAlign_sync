@@ -1,0 +1,163 @@
+How to control RGB Camera Controls: want to figure out how to take a still image
+
+
+
+"""
+This example shows usage of Camera Control message as well as ColorCamera configInput to change crop x and y
+Uses 'WASD' controls to move the crop window, 'C' to capture a still image, 'T' to trigger autofocus, 'IOKL,.NM'
+for manual exposure/focus/white-balance:
+  Control:      key[dec/inc]  min..max
+  exposure time:     I   O      1..33000 [us]
+  sensitivity iso:   K   L    100..1600
+  focus:             ,   .      0..255 [far..near]
+  white balance:     N   M   1000..12000 (light color temperature K)
+
+To go back to auto controls:
+  'E' - autoexposure
+  'F' - autofocus (continuous)
+  'B' - auto white-balance
+
+Other controls:
+    '1' - AWB lock (true / false)
+    '2' - AE lock (true / false)
+    '3' - Select control: AWB mode
+    '4' - Select control: AE compensation
+    '5' - Select control: anti-banding/flicker mode
+    '6' - Select control: effect mode
+    '7' - Select control: brightness
+    '8' - Select control: contrast
+    '9' - Select control: saturation
+    '0' - Select control: sharpness
+    '[' - Select control: luma denoise
+    ']' - Select control: chroma denoise
+
+For the 'Select control: ...' options, use these keys to modify the value:
+  '-' or '_' to decrease
+  '+' or '=' to increase
+
+'/' to toggle showing camera settings: exposure, ISO, lens position, color temperature
+"""
+
+import depthai as dai
+import cv2
+from itertools import cycle
+
+# Step size ('W','A','S','D' controls)
+STEP_SIZE = 8
+# Manual exposure/focus/white-balance set step
+EXP_STEP = 500  # us
+ISO_STEP = 50
+LENS_STEP = 3
+WB_STEP = 200
+
+def clamp(num, v0, v1):
+    return max(v0, min(num, v1))
+
+# Create pipeline
+pipeline = dai.Pipeline()
+
+# Define sources and outputs
+camRgb = pipeline.create(dai.node.ColorCamera)
+camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_1080_P)
+camRgb.setIspScale(2,3) # 1080P -> 720P
+stillEncoder = pipeline.create(dai.node.VideoEncoder)
+
+controlIn = pipeline.create(dai.node.XLinkIn)
+configIn = pipeline.create(dai.node.XLinkIn)
+ispOut = pipeline.create(dai.node.XLinkOut)
+videoOut = pipeline.create(dai.node.XLinkOut)
+stillMjpegOut = pipeline.create(dai.node.XLinkOut)
+
+controlIn.setStreamName('control')
+configIn.setStreamName('config')
+ispOut.setStreamName('isp')
+videoOut.setStreamName('video')
+stillMjpegOut.setStreamName('still')
+
+# Properties
+camRgb.setVideoSize(640,360)
+stillEncoder.setDefaultProfilePreset(1, dai.VideoEncoderProperties.Profile.MJPEG)
+
+# Linking
+camRgb.isp.link(ispOut.input)
+camRgb.still.link(stillEncoder.input)
+camRgb.video.link(videoOut.input)
+controlIn.out.link(camRgb.inputControl)
+configIn.out.link(camRgb.inputConfig)
+stillEncoder.bitstream.link(stillMjpegOut.input)
+
+# Connect to device and start pipeline
+with dai.Device(pipeline) as device:
+
+    # Get data queues
+    controlQueue = device.getInputQueue('control')
+    configQueue = device.getInputQueue('config')
+    ispQueue = device.getOutputQueue('isp')
+    videoQueue = device.getOutputQueue('video')
+    stillQueue = device.getOutputQueue('still')
+
+
+    while True:
+        vidFrames = videoQueue.tryGetAll()
+        for vidFrame in vidFrames:
+            cv2.imshow('video', vidFrame.getCvFrame())
+
+        ispFrames = ispQueue.tryGetAll()
+        for ispFrame in ispFrames:
+            if show:
+                txt = f"[{ispFrame.getSequenceNum()}] "
+                txt += f"Exposure: {ispFrame.getExposureTime().total_seconds()*1000:.3f} ms, "
+                txt += f"ISO: {ispFrame.getSensitivity()}, "
+                txt += f"Lens position: {ispFrame.getLensPosition()}, "
+                txt += f"Color temp: {ispFrame.getColorTemperature()} K"
+                print(txt)
+            cv2.imshow('isp', ispFrame.getCvFrame())
+
+            # Send new cfg to camera
+            if sendCamConfig:
+                cfg = dai.ImageManipConfig()
+                cfg.setCropRect(cropX, cropY, 0, 0)
+                configQueue.send(cfg)
+                print('Sending new crop - x: ', cropX, ' y: ', cropY)
+                sendCamConfig = False
+
+        stillFrames = stillQueue.tryGetAll()
+        for stillFrame in stillFrames:
+            # Decode JPEG
+            frame = cv2.imdecode(stillFrame.getData(), cv2.IMREAD_UNCHANGED)
+            # Display
+            cv2.imshow('still', frame)
+
+        # Update screen (1ms pooling rate)
+        key = cv2.waitKey(1)
+        if key == ord('q'):
+            break
+        elif key == ord('/'):
+            show = not show
+            if not show: print("Printing camera settings: OFF")
+        elif key == ord('c'):
+            ctrl = dai.CameraControl()
+            ctrl.setCaptureStill(True)
+            controlQueue.send(ctrl)
+        elif key == ord('t'):
+            print("Autofocus trigger (and disable continuous)")
+            ctrl = dai.CameraControl()
+            ctrl.setAutoFocusMode(dai.CameraControl.AutoFocusMode.AUTO)
+            ctrl.setAutoFocusTrigger()
+            controlQueue.send(ctrl)
+        elif key == ord('f'):
+            print("Autofocus enable, continuous")
+            ctrl = dai.CameraControl()
+            ctrl.setAutoFocusMode(dai.CameraControl.AutoFocusMode.CONTINUOUS_VIDEO)
+            controlQueue.send(ctrl)
+        elif key == ord('e'):
+            print("Autoexposure enable")
+            ctrl = dai.CameraControl()
+            ctrl.setAutoExposureEnable()
+            controlQueue.send(ctrl)
+        elif key == ord('b'):
+            print("Auto white-balance enable")
+            ctrl = dai.CameraControl()
+            ctrl.setAutoWhiteBalanceMode(dai.CameraControl.AutoWhiteBalanceMode.AUTO)
+            controlQueue.send(ctrl)
+        
