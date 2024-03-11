@@ -207,11 +207,11 @@ async def run():
         
         if cv2.waitKey(1) == ord('q'):
             break
-        elif key == ord('c')
+        elif key == ord('c'):
             ctrl = dai.CameraControl
             ctrl.setCaptureStill(True)
             controlQueue.send(ctrl)
-        elif key == ord('t')
+        elif key == ord('t'):
             print("Autofocus trigger (and disable continuous)")
             ctrl = dai.CameraControl
             ctrl.setAutoFocusMode(dai.CameraControl.AutoFocusMode.AUTO)
