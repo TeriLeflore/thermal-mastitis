@@ -73,27 +73,27 @@ rgbOut.setStreamName("rgb")
 depthOut.setStreamName("depth")
 
 #Properties
-camRgb.setBoardSocket(dai.CameraBoardSocket.RGB)
+camRgb.setBoardSocket(dai.CameraBoardSocket.CAM_A)
 camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_12_MP) # 4056x3040
 
 try:
     calibData = device.readCalibration2()
-    lensPosition = calibData.getLensPosition(dai.CameraBoardSocket.RGB)
+    lensPosition = calibData.getLensPosition(dai.CameraBoardSocket.CAM_A)
     if lensPosition:
         camRgb.initialControl.setManualFocus(lensPosition)
 except:
     raise
 left.setResolution(monoResolution)
-left.setBoardSocket(dai.CameraBoardSocket.LEFT)
+left.setBoardSocket(dai.CameraBoardSocket.CAM_B)
 left.setFps(fps)
 right.setResolution(monoResolution)
-right.setBoardSocket(dai.CameraBoardSocket.RIGHT)
+right.setBoardSocket(dai.CameraBoardSocket.CAM_C)
 right.setFps(fps)
 
 stereo.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
 # LR-check is required for depth alignment
 stereo.setLeftRightCheck(True)
-stereo.setDepthAlign(dai.CameraBoardSocket.RGB)
+stereo.setDepthAlign(dai.CameraBoardSocket.CAM_A)
 # # 4056x3040
 stereo.setOutputSize(1248, 936)
 
