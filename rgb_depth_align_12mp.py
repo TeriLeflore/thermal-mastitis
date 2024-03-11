@@ -59,6 +59,7 @@ def set_mode(cam, mode):
 
 # Create pipeline
 pipeline = dai.Pipeline()
+device = dai.Device()
 
 # Define sources and outputs
 camRgb = pipeline.create(dai.node.ColorCamera)
