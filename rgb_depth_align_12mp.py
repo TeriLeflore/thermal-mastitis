@@ -1,5 +1,9 @@
 #combo of our EID code, rgb_camera_control codes, and rgb-depth-aligh-12mp code
-#need to test.
+#doesnt work
+#error  File "/home/teri/Mastitis/rgb_depth_align_12mp.py", line 191, in run
+    #if frameRgb is not None and depthFrame is not None:
+#UnboundLocalError: local variable 'depthFrame' referenced before assignment
+
 
 import datetime
 from asyncio import get_event_loop
@@ -59,7 +63,7 @@ def set_mode(cam, mode):
 
 # Create pipeline
 pipeline = dai.Pipeline()
-device = dai.Device()
+device= dai.Device()
 
 # Define sources and outputs
 camRgb = pipeline.create(dai.node.ColorCamera)
@@ -104,11 +108,12 @@ left.out.link(stereo.left)
 right.out.link(stereo.right)
 stereo.depth.link(depthOut.input)
 
-with dai.Device(pipeline) as oak_camera:
+with device:
+    device.startPipeline(pipeline)
     #Print MxID, USB speed, and available cameras on the device
-    print ('MxID:' , device.getDeviceInfor().getMxId())
-    print('USB speed:', device.getUsbSpeed())
-    print('Connected cameras:', device.getConnectedCameras())
+   # print ('MxID:' , device.getDeviceInfo().getMxId())
+   # print('USB speed:', device.getUsbSpeed())
+   # print('Connected cameras:', device.getConnectedCameras())
     
     frameRgb = None
     depthFrame = None
@@ -121,7 +126,6 @@ with dai.Device(pipeline) as oak_camera:
     cv2.namedWindow(depthWindowName)
     cv2.namedWindow(blendedWindowName)
     cv2.createTrackbar('RGB Weight %', blendedWindowName, int(rgbWeight*100), 100, updateBlendWeights)
-
 
 # define event loop
 async def run():
@@ -161,18 +165,19 @@ async def run():
         for oakcam in oak_cam_list:
             device_info = dai.DeviceInfo(oakcam.mxid)
             oak_camera = dai.Device(pipeline, device_info)
-            
+        
+    #while True:      
         latestPacket = {}
         latestPacket["rgb"] = None
         latestPacket["depth"] = None
 
-        #queueEvents = device.getQueueEvents(("rgb", "depth"))
         queueEvents = oak_camera.getQueueEvents(("rgb", "depth"))
+        
         for queueName in queueEvents:
-            #packets = device.getOutputQueue(queueName).tryGetAll()  
             packets = oak_camera.getOutputQueue(queueName).tryGetAll()  #output queue, to recieve message from the host to the device
             if len(packets) > 0:
                 latestPacket[queueName] = packets[-1]
+                
 
         if latestPacket["rgb"] is not None:
             frameRgb = latestPacket["rgb"].getCvFrame()
@@ -195,18 +200,12 @@ async def run():
             cv2.imshow(blendedWindowName, blended)
             frameRgb = None
             depthFrame = None        
-            cv2.imwrite(oakcam.mxid + "_rgbBlend_" + img_name + ".png", qRGB)
+            cv2.imwrite(oakcam.mxid + "_rgbBlend_" + img_name + ".png", blended)
             
-        stillFrames = stillQueue.tryGetAll()
-        for stillFrame in stillFrames:
-            #Decode JPEG
-            frame = cv2.imdecode(stillFrame.getData(), cv2.IMREAD_UNCHANGED)
-            #Display
-            cv2.imshow('still', frame)
          
         # Check for keyboard input
-        
-        if cv2.waitKey(1) == ord('q'):
+        key = cv2.waitKey(1)
+        if key == ord('q'):
             break
         elif key == ord('c'):
             ctrl = dai.CameraControl
@@ -224,5 +223,7 @@ async def run():
 
 loop = get_event_loop()
 loop.run_until_complete(run())
+
+
 
 
