@@ -1,13 +1,15 @@
 #3/25 This code works for taking rbg and disparity photos on both OAK cameras
 
 import datetime
-from asyncio import get_event_loop
 import time
 import serial
 import cv2
+from asyncio import get_event_loop
+
+import numpy as np
 import depthai as dai
 from serial_asyncio import open_serial_connection
-import numpy as np
+
 
 # Tag reader variables
 portname = '/dev/ttyUSB0'
@@ -16,7 +18,6 @@ timeout = 1
 
 # IR camera variables
 ir_camera_list = [("B769","/dev/v4l/by-id/usb-FLIR_Boson_196769-video-index0"),
-		("B206","/dev/v4l/by-id/usb-FLIR_Boson_97206-video-index0"),
 		("B764","/dev/v4l/by-id/usb-FLIR_Boson_196764-video-index0")]	
 
 
@@ -24,32 +25,20 @@ ir_camera_list = [("B769","/dev/v4l/by-id/usb-FLIR_Boson_196769-video-index0"),
 lr_check = True
 
 #Define a pipeline (This is an empty pipeline object)
-pipeline = dai.Pipeline()
-pipeline2 = dai.Pipeline()
+
+
    
-# Configure nodes for mono camera, color camera, and depth
+# Oak Camera 1: Configure nodes for mono camera, color camera, and depth
+pipeline = dai.Pipeline()
 camRgb = pipeline.create(dai.node.ColorCamera)
 monoLeft = pipeline.create(dai.node.MonoCamera)
 monoRight = pipeline.create(dai.node.MonoCamera)
 depth = pipeline.create(dai.node.StereoDepth)
 xout = pipeline.create(dai.node.XLinkOut)
 xoutRgb = pipeline.create(dai.node.XLinkOut)
-
-#OAK camera 2
-camRgb2 = pipeline2.create(dai.node.ColorCamera)
-monoLeft2 = pipeline2.create(dai.node.MonoCamera)
-monoRight2 = pipeline2.create(dai.node.MonoCamera)
-depth2 = pipeline2.create(dai.node.StereoDepth)
-xout2 = pipeline2.create(dai.node.XLinkOut)
-xoutRgb2 = pipeline2.create(dai.node.XLinkOut)
-
-    
+# pipeline  properties
 xout.setStreamName("disparity")
 xoutRgb.setStreamName("rgb")
-xout2.setStreamName("disparity2")
-xoutRgb2.setStreamName("rgb2")
-
-#Properties    
 monoLeft.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
 monoLeft.setCamera("left")
 monoRight.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
@@ -57,7 +46,30 @@ monoRight.setCamera("right")
 camRgb.setResolution(dai.ColorCameraProperties.SensorResolution.THE_12_MP)
 camRgb.setBoardSocket(dai.CameraBoardSocket.CAM_A)
 camRgb.setVideoSize(3840,2160)
+# Create a node that will produce the depth map (using disparity output as it's easier to visualize depth this way)
+depth.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
+# Options: MEDIAN_OFF, KERNEL_3x3, KERNEL_5x5, KERNEL_7x7 (default)
+depth.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
+depth.setLeftRightCheck(lr_check)
+# depth.setExtendedDisparity(extended_disparity)
+# depth.setSubpixel(subpixel)
+# Configure left and right cameras to work as a stereo pair
+monoLeft.out.link(depth.left)
+monoRight.out.link(depth.right)
+depth.disparity.link(xout.input)
+camRgb.video.link(xoutRgb.input)
 
+#OAK camera 2: Configure nodes for mono camera, color camera, and depth
+pipeline2 = dai.Pipeline()
+camRgb2 = pipeline2.create(dai.node.ColorCamera)
+monoLeft2 = pipeline2.create(dai.node.MonoCamera)
+monoRight2 = pipeline2.create(dai.node.MonoCamera)
+depth2 = pipeline2.create(dai.node.StereoDepth)
+xout2 = pipeline2.create(dai.node.XLinkOut)
+xoutRgb2 = pipeline2.create(dai.node.XLinkOut)
+#pipeline  properties
+xout2.setStreamName("disparity2")
+xoutRgb2.setStreamName("rgb2")
 monoLeft2.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
 monoLeft2.setCamera("left")
 monoRight2.setResolution(dai.MonoCameraProperties.SensorResolution.THE_400_P)
@@ -65,33 +77,16 @@ monoRight2.setCamera("right")
 camRgb2.setResolution(dai.ColorCameraProperties.SensorResolution.THE_12_MP)
 camRgb2.setBoardSocket(dai.CameraBoardSocket.CAM_A)
 camRgb2.setVideoSize(3840,2160)
-
-# Create a node that will produce the depth map (using disparity output as it's easier to visualize depth this way)
-depth.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
-
-# Options: MEDIAN_OFF, KERNEL_3x3, KERNEL_5x5, KERNEL_7x7 (default)
-depth.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
-depth.setLeftRightCheck(lr_check)
-#depth.setExtendedDisparity(extended_disparity)
-#depth.setSubpixel(subpixel)
-
 depth2.setDefaultProfilePreset(dai.node.StereoDepth.PresetMode.HIGH_DENSITY)
 depth2.initialConfig.setMedianFilter(dai.MedianFilter.KERNEL_7x7)
 depth2.setLeftRightCheck(lr_check)
-#depth2.setExtendedDisparity(extended_disparity)
-#depth2.setSubpixel(subpixel)
-   
-#connect camera output to input
-# Configure left and right cameras to work as a stereo pair
-monoLeft.out.link(depth.left)
-monoRight.out.link(depth.right)
-depth.disparity.link(xout.input)
-camRgb.video.link(xoutRgb.input)
-
+# depth2.setExtendedDisparity(extended_disparity)
+# depth2.setSubpixel(subpixel)
 monoLeft2.out.link(depth2.left)
 monoRight2.out.link(depth2.right)
 depth2.disparity.link(xout2.input)
-camRgb2.video.link(xoutRgb2.input)
+camRgb2.video.link(xoutRgb2.input)   
+    
 
 def set_mode(cam, mode):
     if mode == "16bit":
@@ -109,13 +104,10 @@ def set_mode(cam, mode):
 
 
 # initialize a device with pipeline and start it (device = OAK-D camera)
-#device = dai.Device(pipeline)
+
 device = dai.Device(pipeline, usb2Mode=True) #communicate vid USB2
 device2 = dai.Device(pipeline2, usb2Mode=True) #communicate vid USB2
-    #formula for depth from disparty
-    #calibData= device.readCalibration()
-    #intrinsics = calibData.getCameraIntrinsics(dai.CameraBoardSocket.CAM_C)
-    #print("Right mono camera focal leangth in pixels:", intrinsics[0][0]
+
     
   
 #From this point on, the pipeline will be running on the device, producing the results we requested. Lets grab them
